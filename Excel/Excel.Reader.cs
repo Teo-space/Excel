@@ -10,7 +10,7 @@ public static partial class Excel
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
         }
 
-        public static DataTable ReadDataTableFromExcelPackage(OfficeOpenXml.ExcelPackage excelPackage, string? sheetName)
+        public static DataTable ReadDataTableFromExcelPackage(ExcelPackage excelPackage, string? sheetName)
         {
             if(!excelPackage.Workbook.Worksheets.Any()) 
             {
@@ -34,6 +34,7 @@ public static partial class Excel
                 //dt.Columns.Add(cell.Text);
                 var columnType = sheet.Cells[2, columnNameIndex, sheet.Dimension.End.Row, columnNameIndex]
                     .Where(x => x.Value != null)
+                    .Take(20)
                     .Select(x => x.Value.GetType())
                     .GroupBy(x => x)
                     .OrderByDescending(group => group.Count())
@@ -51,33 +52,10 @@ public static partial class Excel
                 foreach (var cell in wsRow)
                 {
                     row[cell.Start.Column - 1] = cell.Value;
-                    Console.WriteLine($"[{cell.Value}, ({cell.Value.GetType()})]");
                 }
             }
             return dt;
         }
-
-        public static DataTable ReadDataTableFromStream(Stream stream, string? sheetName)
-        {
-            using (var excelPackage = new OfficeOpenXml.ExcelPackage())
-            {
-                excelPackage.Load(stream);
-                return ReadDataTableFromExcelPackage(excelPackage, sheetName);
-            }
-        }
-
-        public static DataTable ReadDataTableFromFile(string filePath, string? sheetName)
-        {
-            if (!File.Exists(filePath))
-            {
-                throw new FileNotFoundException(filePath);
-            }
-            using (var stream = File.OpenRead(filePath))
-            {
-                return ReadDataTableFromStream(stream, sheetName);
-            }
-        }
-
 
     }
 }
