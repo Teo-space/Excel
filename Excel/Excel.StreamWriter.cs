@@ -18,7 +18,7 @@ public static partial class Excel
             {
                 throw new ArgumentNullException(nameof(sheetName));
             }
-            using (var excelPackage = new ExcelPackage(writeStream))
+            using (var excelPackage = new OfficeOpenXml.ExcelPackage(writeStream))
             {
                 Excel.Writer.WriteDataTableToExcelPackage(excelPackage, sheetName, dt);
             }
@@ -38,9 +38,9 @@ public static partial class Excel
 
         public static void WriteDataTableToStream(Stream writeStream, Stream templateReadStream, string sheetName, DataTable dt)
         {
-            using (var excelPackage = new ExcelPackage(writeStream, templateReadStream))
+            using (var excelPackage = new OfficeOpenXml.ExcelPackage(writeStream, templateReadStream))
             {
-                Excel.Writer.WriteDataTableToExcelPackage(excelPackage, sheetName, dt);
+                Excel.Writer.WriteDataTableToExcelPackageUsingTemplate(excelPackage, sheetName, dt);
             }
         }
 

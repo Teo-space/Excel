@@ -1,7 +1,6 @@
 ﻿using OfficeOpenXml;
 using System.Data;
 
-
 public static partial class Excel
 {
     /// <summary>
@@ -18,10 +17,12 @@ public static partial class Excel
             {
                 throw new ArgumentNullException(nameof(sheetName));
             }
-            using (var excelPackage = new ExcelPackage())
+            using (var excelPackage = new OfficeOpenXml.ExcelPackage())
             {
                 Excel.Writer.WriteDataTableToExcelPackage(excelPackage, sheetName, dt);
+
                 var bytes = excelPackage.GetAsByteArray();
+
                 return bytes;
             }
         }
@@ -38,11 +39,14 @@ public static partial class Excel
             }
 
             using (var templateStream = File.OpenRead(templateFilePath))
-            using (var excelPackage = new ExcelPackage())
+            using (var excelPackage = new OfficeOpenXml.ExcelPackage())
             {
                 excelPackage.Load(templateStream);
-                Excel.Writer.WriteDataTableToExcelPackage(excelPackage, sheetName, dt);
+
+                Excel.Writer.WriteDataTableToExcelPackageUsingTemplate(excelPackage, sheetName, dt);
+
                 var bytes = excelPackage.GetAsByteArray();
+
                 return bytes;
             }
         }

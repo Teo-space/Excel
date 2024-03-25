@@ -2,8 +2,5 @@
 
 public static partial class Excel
 {
-    static Excel()
-    {
-        ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
-    }
+    static Excel() => ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 }

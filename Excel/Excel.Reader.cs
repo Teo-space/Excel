@@ -3,38 +3,41 @@ using System.Data;
 
 public static partial class Excel
 {
+    /// <summary>
+    /// Чтение Excel
+    /// </summary>
     public static class Reader
     {
-        static Reader()
-        {
-            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
-        }
+        static Reader() => ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
-        public static DataTable ReadDataTableFromExcelPackage(ExcelPackage excelPackage, string? sheetName)
-        {
-            if(!excelPackage.Workbook.Worksheets.Any()) 
-            {
-                throw new Exception("ExcelPackage has not WorkSheets");
-            }
 
-            var sheet = string.IsNullOrEmpty(sheetName)
-                ? excelPackage.Workbook.Worksheets.FirstOrDefault(s => s.Name == sheetName)
+        public static DataTable ReadDataTableFromExcelPackage(OfficeOpenXml.ExcelPackage excelPackage, string? sheetName)
+        {
+            var sheet = !string.IsNullOrEmpty(sheetName)
+                ? excelPackage.Workbook.Worksheets.FirstOrDefault(s => s.Name == sheetName) ?? excelPackage.Workbook.Worksheets.FirstOrDefault()
                 : excelPackage.Workbook.Worksheets.FirstOrDefault();
             if (sheet == null)
             {
                 throw new Exception(string.IsNullOrEmpty(sheetName) ? "Workbook.Worksheets Is Empty" : $"WorkSheet '{sheetName}' not found");
             }
 
+            DataTable dt = ReadDataTableFromExcelWorkSheet(sheetName, sheet);
+            TrimStrings(dt);
+            return dt;
+        }
+
+        private static DataTable ReadDataTableFromExcelWorkSheet(string? sheetName, ExcelWorksheet excelWorksheet)
+        {
             DataTable dt = new DataTable();
             dt.TableName = sheetName ?? "Table";
             //Заполняем имена и типы столбцов
             int columnNameIndex = 1;
-            foreach (var cell in sheet.Cells[1, 1, 1, sheet.Dimension.End.Column])
+            foreach (var cell in excelWorksheet.Cells[1, 1, 1, excelWorksheet.Dimension.End.Column])
             {
-                //dt.Columns.Add(cell.Text);
-                var columnType = sheet.Cells[2, columnNameIndex, sheet.Dimension.End.Row, columnNameIndex]
+                //расчитываем тип колонки по первым 15 строкам таблицы
+                var columnType = excelWorksheet.Cells[2, columnNameIndex, excelWorksheet.Dimension.End.Row, columnNameIndex]
                     .Where(x => x.Value != null)
-                    .Take(20)
+                    .Take(15)
                     .Select(x => x.Value.GetType())
                     .GroupBy(x => x)
                     .OrderByDescending(group => group.Count())
@@ -45,9 +48,9 @@ public static partial class Excel
                 columnNameIndex++;
             }
             //Заполняем Rows
-            for (int rowNum = 2; rowNum <= sheet.Dimension.End.Row; rowNum++)
+            for (int rowNum = 2; rowNum <= excelWorksheet.Dimension.End.Row; rowNum++)
             {
-                var wsRow = sheet.Cells[rowNum, 1, rowNum, sheet.Dimension.End.Column];
+                var wsRow = excelWorksheet.Cells[rowNum, 1, rowNum, excelWorksheet.Dimension.End.Column];
                 DataRow row = dt.Rows.Add();
                 foreach (var cell in wsRow)
                 {
@@ -57,5 +60,18 @@ public static partial class Excel
             return dt;
         }
 
+        private static void TrimStrings(DataTable dt)
+        {
+            var stringColumns = dt.Columns.OfType<DataColumn>().Where(x => x.DataType == typeof(string)).ToList();
+
+            foreach (DataRow row in dt.Rows)
+            {
+                foreach (DataColumn dataColumn in stringColumns)
+                {
+                    row[dataColumn] = row.IsNull(dataColumn) ? null : row.Field<string>(dataColumn)?.Trim();//IsNull проверяет на System.DbNull
+                }
+            }
+
+        }
     }
 }
